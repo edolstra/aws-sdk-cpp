@@ -23,5 +23,5 @@ using namespace Aws::Utils::Logging;
 
 void ConsoleLogSystem::ProcessFormattedStatement(Aws::String&& statement)
 {
-    std::cout << statement;
+    std::cerr << statement;
 }
