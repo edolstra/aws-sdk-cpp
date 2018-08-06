@@ -92,9 +92,10 @@ namespace Aws
                                                                     const Aws::String& bucketName,
                                                                     const Aws::String& keyName, const Aws::String& contentType,
                                                                     const Aws::Map<Aws::String, Aws::String>& metadata,
-                                                                    const std::shared_ptr<const Aws::Client::AsyncCallerContext>& context)
+                                                                    const std::shared_ptr<const Aws::Client::AsyncCallerContext>& context,
+                                                                    const Aws::String& contentEncoding)
         {
-            return this->DoUploadFile(fileStream, bucketName, keyName, contentType, metadata, context);
+            return this->DoUploadFile(fileStream, bucketName, keyName, contentType, metadata, context, contentEncoding);
         }
 
         std::shared_ptr<TransferHandle> TransferManager::DownloadFile(const Aws::String& bucketName, 
@@ -252,6 +253,9 @@ namespace Aws
                 createMultipartRequest.WithKey(handle->GetKey());
                 createMultipartRequest.WithMetadata(handle->GetMetadata());
 
+                if (handle->GetContentEncoding() != "")
+                    createMultipartRequest.WithContentEncoding(handle->GetContentEncoding());
+
                 auto createMultipartResponse = m_transferConfig.s3Client->CreateMultipartUpload(createMultipartRequest);
                 if (createMultipartResponse.IsSuccess())
                 {
@@ -382,6 +386,9 @@ namespace Aws
                 .WithMetadata(handle->GetMetadata());
 
             putObjectRequest.SetContentType(handle->GetContentType());
+
+            if (handle->GetContentEncoding() != "")
+                putObjectRequest.SetContentEncoding(handle->GetContentEncoding());
 
             auto buffer = m_bufferManager.Acquire();
 
@@ -956,12 +963,15 @@ namespace Aws
                                                                                 const Aws::String& contentType, 
                                                                                 const Aws::Map<Aws::String, Aws::String>& metadata,
                                                                                 const std::shared_ptr<const Aws::Client::AsyncCallerContext>& context,
-                                                                                const Aws::String& fileName)
+                                                                                const Aws::String& fileName,
+                                                                                const Aws::String& contentEncoding)
         {
             auto handle = Aws::MakeShared<TransferHandle>(CLASS_TAG, bucketName, keyName, 0, fileName);
             handle->SetContentType(contentType);
             handle->SetMetadata(metadata);
             handle->SetContext(context);
+            if (contentEncoding != "")
+                handle->SetContentEncoding(contentEncoding);
 
             if (!fileStream->good()) 
             {
@@ -1010,9 +1020,10 @@ namespace Aws
                                                                       const Aws::String& keyName,
                                                                       const Aws::String& contentType,
                                                                       const Aws::Map<Aws::String, Aws::String>& metadata,
-                                                                      const std::shared_ptr<const Aws::Client::AsyncCallerContext>& context)
+                                                                      const std::shared_ptr<const Aws::Client::AsyncCallerContext>& context,
+                                                                      const Aws::String& contentEncoding)
         {
-            auto handle = CreateUploadFileHandle(fileStream.get(), bucketName, keyName, contentType, metadata, context);
+            auto handle = CreateUploadFileHandle(fileStream.get(), bucketName, keyName, contentType, metadata, context, "", contentEncoding);
             return SubmitUpload(handle, fileStream);
         }
 
